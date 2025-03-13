@@ -1,0 +1,28 @@
+name: .NET Core
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@master
+        with:
+          dotnet-version: latest
+
+      - name: Build .NET API
+        working-directory: src/TimeTracker.API
+        run: dotnet build --configuration Release
+
+      - name: Build .NET SPA
+        working-directory: src/TimeTracker.SPA
+        run: dotnet build --configuration Release
+
+      - name: Test TimeTracker
+        working-directory: src/TimeTracker.Tests
+        run: dotnet test
