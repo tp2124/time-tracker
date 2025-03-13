@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@master
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@master
+        # uses: actions/setup-dotnet@master
         with:
           dotnet-version: 9.0.*
 
