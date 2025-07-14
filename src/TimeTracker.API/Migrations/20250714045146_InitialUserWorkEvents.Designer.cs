@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace TimeTracker.API.Migrations
 {
-    [DbContext(typeof(TimeTrackerContext))]
+    [DbContext(typeof(TimeTrackerDBContext))]
     [Migration("20250714045146_InitialUserWorkEvents")]
     partial class InitialUserWorkEvents
     {

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +10,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+	c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 });
 // Swagger setup End
 builder.Services.AddDbContext<TimeTrackerDBContext>();
@@ -20,7 +21,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+	c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
 });
 // Swagger setup End
 
@@ -28,35 +29,57 @@ app.UseSwaggerUI(c =>
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+	app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
 #region Endpoints
-app.MapGet("/weatherforecast", () =>
+
+app.MapGet("/users", async (TimeTrackerDBContext db) =>
+	await db.Users.ToListAsync());
+app.MapGet("/users/enabledWarnings", async (TimeTrackerDBContext db) =>
+	await db.Users.Where(t => t.EndOfDayWarningEnabled).ToListAsync());
+
+app.MapGet("/users/{id}", async (int id, TimeTrackerDBContext db) =>
+	await db.Users.FindAsync(id)
+		is User user
+			? Results.Ok(user)
+			: Results.NotFound());
+
+app.MapPost("/users", async (User user, TimeTrackerDBContext db) =>
 {
-	WeatherForecast[] forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+	db.Users.Add(user);
+	await db.SaveChangesAsync();
+
+	return Results.Created($"/users/{user.Id}", user);
+});
+
+app.MapPut("/users/{id}", async (int id, User inputUser, TimeTrackerDBContext db) =>
+{
+	var todo = await db.Users.FindAsync(id);
+
+	if (todo is null) return Results.NotFound();
+
+	todo.Name = inputUser.Name;
+	todo.EndOfDayWarningEnabled = inputUser.EndOfDayWarningEnabled;
+
+	await db.SaveChangesAsync();
+
+	return Results.NoContent();
+});
+
+app.MapDelete("/users/{id}", async (int id, TimeTrackerDBContext db) =>
+{
+	if (await db.Users.FindAsync(id) is User user)
+	{
+		db.Users.Remove(user);
+		await db.SaveChangesAsync();
+		return Results.NoContent();
+	}
+
+	return Results.NotFound();
+});
 #endregion
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
