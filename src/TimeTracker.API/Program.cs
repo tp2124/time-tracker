@@ -12,6 +12,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 });
 // Swagger setup End
+builder.Services.AddDbContext<TimeTrackerDBContext>();
+// builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 var app = builder.Build();
 // Swagger setup Start
