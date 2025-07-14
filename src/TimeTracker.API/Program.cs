@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
+#region Builder Setup
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -16,6 +17,8 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<TimeTrackerDBContext>();
 // builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+#endregion
+#region App Initialize
 var app = builder.Build();
 // Swagger setup Start
 app.UseSwagger();
@@ -33,29 +36,32 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+#endregion
 
 #region Endpoints
-
-app.MapGet("/users", async (TimeTrackerDBContext db) =>
+#region Users
+const string usersUrlBase = "users";
+RouteGroupBuilder usersGroup = app.MapGroup($"/{usersUrlBase}");
+usersGroup.MapGet("/", async (TimeTrackerDBContext db) =>
 	await db.Users.ToListAsync());
-app.MapGet("/users/enabledWarnings", async (TimeTrackerDBContext db) =>
+usersGroup.MapGet("/enabledWarnings", async (TimeTrackerDBContext db) =>
 	await db.Users.Where(t => t.EndOfDayWarningEnabled).ToListAsync());
 
-app.MapGet("/users/{id}", async (int id, TimeTrackerDBContext db) =>
+usersGroup.MapGet("/{id}", async (int id, TimeTrackerDBContext db) =>
 	await db.Users.FindAsync(id)
 		is User user
 			? Results.Ok(user)
 			: Results.NotFound());
 
-app.MapPost("/users", async (User user, TimeTrackerDBContext db) =>
+usersGroup.MapPost("/", async (User user, TimeTrackerDBContext db) =>
 {
 	db.Users.Add(user);
 	await db.SaveChangesAsync();
 
-	return Results.Created($"/users/{user.Id}", user);
+	return Results.Created($"/{usersUrlBase}/{user.Id}", user);
 });
 
-app.MapPut("/users/{id}", async (int id, User inputUser, TimeTrackerDBContext db) =>
+usersGroup.MapPut("/{id}", async (int id, User inputUser, TimeTrackerDBContext db) =>
 {
 	var todo = await db.Users.FindAsync(id);
 
@@ -69,7 +75,7 @@ app.MapPut("/users/{id}", async (int id, User inputUser, TimeTrackerDBContext db
 	return Results.NoContent();
 });
 
-app.MapDelete("/users/{id}", async (int id, TimeTrackerDBContext db) =>
+usersGroup.MapDelete("/{id}", async (int id, TimeTrackerDBContext db) =>
 {
 	if (await db.Users.FindAsync(id) is User user)
 	{
@@ -80,6 +86,7 @@ app.MapDelete("/users/{id}", async (int id, TimeTrackerDBContext db) =>
 
 	return Results.NotFound();
 });
+#endregion
 #endregion
 
 app.Run();
